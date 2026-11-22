@@ -28,13 +28,41 @@ ${x.name||'신청자'}님, ${x.course||'AI강좌'} 참가가 확정되었습니�
 if(!/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)){showMessage('스마트폰에서 관리자 페이지를 열고 문자 보내기를 눌러주세요. PC에서는 문자 앱이 열리지 않을 수 있습니다.',true);return}
 if(!confirm(`${x.name||'신청자'}님에게 문자 작성 화면을 열까요?\n실제 전송은 휴대전화 문자 앱에서 직접 누릅니다.`))return;
 location.href='sms:'+phone+'?body='+encodeURIComponent(message)}
+async function downloadInvitation(x){
+ if(x.status!=='확정'){showMessage('확정된 신청자만 안내장을 만들 수 있습니다.',true);return}
+ const canvas=document.createElement('canvas');canvas.width=900;canvas.height=1200;
+ const c=canvas.getContext('2d');c.fillStyle='#ffffff';c.fillRect(0,0,900,1200);
+ const img=new Image();img.src='./library-photo.jpg';
+ try{await img.decode()}catch{showMessage('도서관 사진을 불러오지 못했습니다. library-photo.jpg 업로드를 확인하세요.',true);return}
+ const photoH=325,scale=Math.max(900/img.width,photoH/img.height),w=img.width*scale,h=img.height*scale;
+ c.drawImage(img,(900-w)/2,(photoH-h)/2,w,h);
+ c.fillStyle='#123d6c';c.fillRect(0,photoH,900,9);
+ const font=(size,bold=false)=>`${bold?'bold ':''}${size}px "Malgun Gothic","Apple SD Gothic Neo",sans-serif`;
+ const fit=(value,maxWidth,size,minSize,bold=false)=>{c.font=font(size,bold);while(c.measureText(value).width>maxWidth&&size>minSize){size-=2;c.font=font(size,bold)}return size};
+ c.fillStyle='#164a7d';c.font=font(44,true);c.fillText('진해기적의도서관',55,408);
+ c.fillStyle='#123d6c';fit('AI강좌 참가 확정 안내',790,69,52,true);c.fillText('AI강좌 참가 확정 안내',55,505);
+ c.fillStyle='#162d43';const welcome=String(x.name||'신청자').slice(0,20)+'님, 환영합니다.';
+ fit(welcome,790,62,36,true);c.fillText(welcome,55,616);
+ c.fillStyle='#17344e';c.font=font(44,true);c.fillText('참가 신청이 확정되었습니다.',55,698);
+ c.fillStyle='#eaf3fc';c.beginPath();c.roundRect(45,748,810,212,22);c.fill();
+ c.fillStyle='#164a7d';c.font=font(40,true);c.fillText('신청 과정',73,814);
+ const course=String(x.course||'AI강좌');c.fillStyle='#17344e';c.font=font(43,true);
+ let line='',lines=[];for(const ch of course){if(c.measureText(line+ch).width>746&&line){lines.push(line);line=ch}else line+=ch}if(line)lines.push(line);
+ if(lines.length>2){c.font=font(34,true);line='';lines=[];for(const ch of course){if(c.measureText(line+ch).width>746&&line){lines.push(line);line=ch}else line+=ch}if(line)lines.push(line)}
+ lines.slice(0,2).forEach((t,i)=>c.fillText(t,73,880+i*53));
+ c.fillStyle='#344f68';c.font=font(34);c.fillText('교육 장소 및 준비물은 별도 안내드립니다.',55,1032);
+ c.fillStyle='#173f68';c.font=font(39,true);c.fillText('접수 문의  010-7675-2203',55,1103);
+ c.fillStyle='#cbd9e7';c.fillRect(55,1141,790,2);
+ c.fillStyle='#647b90';c.font=font(28);c.fillText('진해기적의도서관 AI강좌',55,1182);
+ canvas.toBlob(blob=>{if(!blob){showMessage('이미지 생성에 실패했습니다.',true);return}const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AI강좌_참가확정_'+String(x.name||'신청자').replace(/[^가-힣a-zA-Z0-9_-]/g,'')+'.png';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);showMessage('개인별 안내장 이미지를 저장했습니다. 문자 앱에서 해당 이미지를 첨부해 발송하세요.');},'image/png');
+}
 function render(){const keyword=$('search').value.trim().toLowerCase(),filter=$('filter').value;const subset=applications.filter(x=>(filter==='all'||x.status===filter)&&(!keyword||`${x.name||''} ${x.course||''}`.toLowerCase().includes(keyword)));
 $('total').textContent=applications.length;for(const [id,value] of [['waiting','접수'],['confirmed','확정'],['cancelled','취소']])$(id).textContent=applications.filter(x=>x.status===value).length;
 const tbody=$('rows');tbody.replaceChildren();$('empty').style.display=subset.length?'none':'block';
 for(const x of subset){const tr=document.createElement('tr');tr.append(td(dateText(x.createdAt)));const who=td('');const strong=document.createElement('strong');strong.textContent=x.name||'(이름 없음)';who.append(strong);const phone=document.createElement('small');phone.textContent=x.phone||'연락처 없음';who.append(phone);tr.append(who);tr.append(td(x.course||'—'),td(x.participants??'—'),td(`${x.address||'미기재'} / ${x.age||'미기재'}`),td(`개인정보 ${x.privacyConsent?'동의':'미동의'} · 사진 ${x.publicityConsent?'동의':'미동의'}`));
 const sc=td(''),badge=document.createElement('span');badge.className='status';badge.dataset.value=x.status||'접수';badge.textContent=x.status||'접수';sc.append(badge);tr.append(sc);
 const actions=td(''),select=document.createElement('select');select.className='statuspicker';select.setAttribute('aria-label',`${x.name||'신청자'} 상태 선택`);for(const v of ['접수','확정','취소']){const o=document.createElement('option');o.value=v;o.textContent=v;select.append(o)}select.value=['접수','확정','취소'].includes(x.status)?x.status:'접수';select.addEventListener('change',async()=>{const next=select.value;if(next===x.status)return;select.disabled=true;try{await updateDoc(doc(db,'applications',x.id),{status:next});x.status=next;showMessage(`${x.name||'신청자'}: 접수 상태가 '${next}'(으)로 변경되었습니다.`);render()}catch(err){console.error(err);showMessage('상태 변경 실패: Firebase 권한과 인터넷 연결을 확인하세요.',true);select.value=x.status||'접수';select.disabled=false}});
-actions.append(select);if(x.status==='확정'){const sms=makeButton('✉ 문자 보내기',()=>openSms(x),'btn btnsms');sms.disabled=!/^01\d{8,9}$/.test(phoneNumber(x));sms.title=sms.disabled?'휴대전화 번호 없음':'스마트폰 문자 앱 열기';actions.append(document.createTextNode(' '),sms)}
+actions.append(select);if(x.status==='확정'){actions.append(document.createTextNode(' '),makeButton('이미지 안내장 저장',()=>downloadInvitation(x),'btn btnsms'));const sms=makeButton('✉ 문자 보내기',()=>openSms(x),'btn btnsms');sms.disabled=!/^01\d{8,9}$/.test(phoneNumber(x));sms.title=sms.disabled?'휴대전화 번호 없음':'스마트폰 문자 앱 열기';actions.append(document.createTextNode(' '),sms)}
 actions.append(document.createTextNode(' '),makeButton('삭제',async()=>{if(!confirm('선택한 신청 내역을 영구 삭제하시겠습니까?'))return;try{await deleteDoc(doc(db,'applications',x.id));applications=applications.filter(a=>a.id!==x.id);showMessage('신청 내역을 삭제했습니다.');render()}catch(err){console.error(err);showMessage('삭제 실패: Firebase 권한을 확인하세요.',true)}},'btn btndanger'));tr.append(actions);tbody.append(tr)}}
 async function loadApplications(){showMessage('신청 내역 불러오는 중…');const snap=await getDocs(query(collection(db,'applications'),orderBy('createdAt','desc'),limit(300)));applications=snap.docs.map(s=>({id:s.id,...s.data()}));$('status-message').hidden=true;render()}
 $('login-form').addEventListener('submit',async e=>{e.preventDefault();$('login-error').hidden=true;const b=$('login-button');b.disabled=true;b.textContent='로그인 확인 중…';try{await setPersistence(auth,browserSessionPersistence);await signInWithEmailAndPassword(auth,$('email').value.trim(),$('password').value);$('password').value=''}catch(err){console.error(err);showError('로그인에 실패했습니다. 관리자 계정과 비밀번호를 확인하세요.')}finally{b.disabled=false;b.textContent='로그인'}});
