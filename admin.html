@@ -10,7 +10,7 @@
   <div class="smsdialog"><h2 id="sms-title">참가 확정 문자 미리보기</h2><p class="sub" id="sms-recipient"></p>
   <div id="sms-preview" class="smsbubble"></div>
   <div class="smsbuttons"><button type="button" class="btn btnprimary" id="sms-send">문자 앱 열기</button><button type="button" class="btn" id="sms-copy">내용 복사</button><button type="button" class="btn" id="sms-close">닫기</button></div>
-  <p class="sub">문자 앱에서 전송 버튼을 눌러야 발송됩니다. 미리보기의 배경색은 실제 문자 앱에 적용되지 않습니다.</p></div>
+  <p class="sub">※ 문자 내용을 확인한 후 전송해 주세요.</p></div>
 </div>
 <footer>※ AI강좌 참가 신청 관리 페이지 · 개인정보 보호에 유의해 주세요.</footer>
 <script type="module">
@@ -26,21 +26,27 @@ function dateText(ts){try{return ts?.toDate?.().toLocaleString('ko-KR',{year:'nu
 function td(value){const e=document.createElement('td');e.textContent=String(value??'');return e}
 function makeButton(label,fn,cls='btn'){const b=document.createElement('button');b.type='button';b.className=cls;b.textContent=label;b.addEventListener('click',fn);return b}
 function phoneNumber(x){return String(x.phone||'').replace(/\D/g,'')}
-function smsText(x){return `[진해기적의도서관 AI강좌]
+function smsText(x){return `📢 진해기적의도서관 AI강좌 참가 확정 안내
 
 ${String(x.name||'신청자').trim()}님, 안녕하세요.
-AI강좌 참가 신청이 확정되었습니다.
 
-신청 과정
+진해기적의도서관 AI강좌 참가 신청이 확정되었습니다.
+
+📅 신청 과정
 ${String(x.course||'AI강좌').trim()}
 
-교육 장소와 준비물은 별도로 안내해 드립니다.
+교육 일정
+1월 9일(토), 16일(토), 23일(토), 30일(토)
 
-자세한 안내
+교육 장소와 준비물은 별도로 안내해 드리겠습니다.
+
+🔗 자세한 안내
 https://jinhae-ai-library-web.vercel.app/guide.html
 
-문의 010-7675-2203
+문의: 010-7675-2203
+
 진해기적의도서관 AI강좌`;}
+
 let selectedSms=null;
 function openSms(x){const phone=phoneNumber(x);
  if(x.status!=='확정'){showMessage('확정 상태의 신청자만 문자 안내가 가능합니다.',true);return}
